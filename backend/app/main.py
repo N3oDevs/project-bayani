@@ -4,6 +4,8 @@ from fastapi.websockets import WebSocketDisconnect
 from PIL import Image
 import base64
 import io
+from typing import Dict
+from collections import defaultdict
 
 from .routes.predict import router as predict_router
 from .utils.preprocess import preprocess_image
@@ -46,4 +48,57 @@ async def ws_predict(websocket: WebSocket):
                 await websocket.send_json({"error": str(e)})
     except WebSocketDisconnect:
         return
+
+rooms: Dict[str, Dict[str, WebSocket]] = defaultdict(dict)
+
+@app.websocket("/ws/signaling")
+async def ws_signaling(websocket: WebSocket):
+    await websocket.accept()
+    room = None
+    role = None
+    try:
+        join = await websocket.receive_json()
+        room = join.get("room")
+        role = join.get("role")
+        t = join.get("type")
+        if t != "join" or not room or role not in ("hardware", "webapp"):
+            await websocket.close()
+            return
+        rooms[room][role] = websocket
+        other = "webapp" if role == "hardware" else "hardware"
+        peer = rooms[room].get(other)
+        if peer:
+            try:
+                await peer.send_json({"type": "peer_joined", "room": room, "role": role})
+            except Exception:
+                pass
+        while True:
+            msg = await websocket.receive_json()
+            mtype = msg.get("type")
+            target = rooms.get(room, {}).get("webapp" if role == "hardware" else "hardware")
+            if mtype in ("offer", "answer", "ice", "ready", "telemetry", "reject"):
+                if target:
+                    payload = dict(msg)
+                    payload["from"] = role
+                    try:
+                        await target.send_json(payload)
+                    except Exception:
+                        pass
+            else:
+                pass
+    except WebSocketDisconnect:
+        other = "webapp" if role == "hardware" else "hardware"
+        peer = rooms.get(room or "", {}).get(other)
+        if peer:
+            try:
+                await peer.send_json({"type": "peer_disconnected", "room": room})
+            except Exception:
+                pass
+        try:
+            if room and role and rooms.get(room, {}).get(role) is websocket:
+                del rooms[room][role]
+                if not rooms[room]:
+                    del rooms[room]
+        except Exception:
+            pass
 
