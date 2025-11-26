@@ -1,6 +1,6 @@
-import VideoFeed from '@/components/video-feed';
-import Header from '@/components/header';
-import FloatingSidebar from '@/components/floating-sidebar';
+import VideoFeed from "@/components/video-feed";
+import Header from "@/components/header";
+import FloatingSidebar from "@/components/floating-sidebar";
 
 export default function Home() {
   return (

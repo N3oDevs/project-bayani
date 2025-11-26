@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# nested app ignores
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
