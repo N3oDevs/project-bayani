@@ -42,7 +42,7 @@ async def ws_predict(websocket: WebSocket):
                 content = base64.b64decode(payload)
                 image = Image.open(io.BytesIO(content)).convert("RGB")
                 inp = preprocess_image(image)
-                preds = _ws_model.predict(inp, orig_size=image.size)
+                preds = _ws_model.predict(inp, orig_size=image.size, pil_image=image)
                 await websocket.send_json({"predictions": preds})
             except Exception as e:
                 await websocket.send_json({"error": str(e)})

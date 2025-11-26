@@ -17,8 +17,7 @@ async def predict(file: UploadFile = File(...)):
         content = await file.read()
         image = Image.open(io.BytesIO(content)).convert("RGB")
         inp = preprocess_image(image)
-        preds = model.predict(inp, orig_size=image.size)
+        preds = model.predict(inp, orig_size=image.size, pil_image=image)
         return JSONResponse({"predictions": preds})
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
-
