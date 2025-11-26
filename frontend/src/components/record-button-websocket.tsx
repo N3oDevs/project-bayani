@@ -1,22 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { Mic, Square, Pause, Play, Trash2, Save, Loader2 } from 'lucide-react';
-import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
+import { Mic, Square, Pause, Play, Trash2, Save, Loader2, Wifi, WifiOff } from 'lucide-react';
+import { useWebSocketVoiceRecorder } from '@/hooks/useWebSocketVoiceRecorder';
 import { supabase } from '@/lib/supabase';
 
-export default function RecordButton() {
+interface RecordButtonWebSocketProps {
+  websocketUrl?: string;
+}
+
+export default function RecordButtonWebSocket({ websocketUrl }: RecordButtonWebSocketProps) {
   const {
     isRecording,
     isPaused,
     recordingTime,
     error,
+    isConnecting,
     startRecording,
     pauseRecording,
     resumeRecording,
     stopRecording,
     cancelRecording,
-  } = useVoiceRecorder();
+  } = useWebSocketVoiceRecorder({
+    wsUrl: websocketUrl || process.env.NEXT_PUBLIC_AUDIO_WS_URL || 'ws://localhost:8000/ws/audio',
+  });
 
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -43,7 +50,7 @@ export default function RecordButton() {
       
       // Generate filename with timestamp
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-      const fileName = `voice-recording-${timestamp}.webm`;
+      const fileName = `voice-recording-ws-${timestamp}.webm`;
       
       // Upload to Supabase Storage
       const { data: uploadData, error: uploadError } = await supabase.storage
@@ -75,7 +82,6 @@ export default function RecordButton() {
 
       if (dbError) {
         console.error('Database error:', dbError);
-        // Don't throw - file is uploaded successfully
       }
 
       setSaveSuccess(true);
@@ -103,6 +109,23 @@ export default function RecordButton() {
     <div className="w-full">
       <div className="bg-gray-900 dark:bg-gray-900 border border-gray-700 dark:border-gray-700 rounded-lg p-8 flex flex-col items-center justify-center transition-colors">
         
+        {/* Connection Status Indicator */}
+        {isRecording && (
+          <div className="absolute top-4 right-4 flex items-center gap-2 text-xs">
+            {isConnecting ? (
+              <>
+                <WifiOff className="text-yellow-500 animate-pulse" size={16} />
+                <span className="text-yellow-500">Connecting...</span>
+              </>
+            ) : (
+              <>
+                <Wifi className="text-green-500" size={16} />
+                <span className="text-green-500">WebSocket Connected</span>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Recording Time Display */}
         {isRecording && (
           <div className="mb-6 text-center">
@@ -111,7 +134,7 @@ export default function RecordButton() {
             </div>
             <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
               <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
-              {isPaused ? 'Paused' : 'Recording'}
+              {isPaused ? 'Paused' : 'Recording from WebSocket'}
             </div>
           </div>
         )}
@@ -120,10 +143,10 @@ export default function RecordButton() {
         {!isRecording ? (
           <button
             onClick={handleStart}
-            disabled={isSaving}
+            disabled={isSaving || isConnecting}
             className="w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSaving ? (
+            {isSaving || isConnecting ? (
               <Loader2 size={40} className="text-white animate-spin" />
             ) : (
               <Mic size={40} className="text-white" />
@@ -134,7 +157,8 @@ export default function RecordButton() {
             {/* Pause/Resume Button */}
             <button
               onClick={isPaused ? resumeRecording : pauseRecording}
-              className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-yellow-600 dark:bg-yellow-600 hover:bg-yellow-700 dark:hover:bg-yellow-700"
+              disabled={isConnecting}
+              className="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-yellow-600 dark:bg-yellow-600 hover:bg-yellow-700 dark:hover:bg-yellow-700 disabled:opacity-50"
             >
               {isPaused ? (
                 <Play size={28} className="text-white ml-1" />
@@ -146,7 +170,7 @@ export default function RecordButton() {
             {/* Stop and Save Button */}
             <button
               onClick={handleStop}
-              disabled={isSaving}
+              disabled={isSaving || isConnecting}
               className="w-20 h-20 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg bg-green-600 dark:bg-green-600 hover:bg-green-700 dark:hover:bg-green-700 disabled:opacity-50"
             >
               {isSaving ? (
@@ -187,15 +211,21 @@ export default function RecordButton() {
             </p>
           )}
           
-          {!isRecording && !error && !saveError && !saveSuccess && !isSaving && (
+          {isConnecting && (
+            <p className="text-yellow-400 text-sm font-medium">
+              🔌 Connecting to WebSocket...
+            </p>
+          )}
+          
+          {!isRecording && !error && !saveError && !saveSuccess && !isSaving && !isConnecting && (
             <p className="text-gray-300 dark:text-gray-300 font-medium">
-              Click to start recording
+              Click to start recording from WebSocket
             </p>
           )}
           
           {isRecording && !error && (
             <p className="text-sm text-gray-400 dark:text-gray-400">
-              Recording will be saved to Supabase
+              Receiving audio stream from WebSocket
             </p>
           )}
           
@@ -209,7 +239,7 @@ export default function RecordButton() {
         {/* Instructions */}
         {!isRecording && !isSaving && (
           <div className="mt-4 text-xs text-gray-500 text-center max-w-xs">
-            <p>Click microphone to start • Stop to save • Cancel to discard</p>
+            <p>WebSocket audio streaming • Stop to save • Cancel to discard</p>
           </div>
         )}
       </div>
