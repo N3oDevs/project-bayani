@@ -1,25 +1,64 @@
 project-bayani/
 ├─ app/
-│  ├─ layout.tsx             # Root layout (global styles, metadata)
-│  ├─ page.tsx               # Main UI screen (video feed + toolbar + panels)
-│  ├─ globals.css            # TailwindCSS base styles
-│
+│  └─ favicon.ico
+├─ backend/
+│  ├─ app/
+│  │  ├─ models/
+│  │  │  └─ yolo_model.py
+│  │  ├─ routes/
+│  │  │  └─ predict.py
+│  │  ├─ utils/
+│  │  │  └─ preprocess.py
+│  │  ├─ __init__.py
+│  │  ├─ config.py
+│  │  └─ main.py
+│  ├─ Dockerfile
+│  └─ requirements.txt
 ├─ components/
-│  ├─ ui/                    # shadcn/ui components (auto-generated)
-│  │  ├─ button.tsx
-│  │  ├─ card.tsx
-│  │  └─ ...
-│  ├─ header.tsx             # Top navbar (optional)
-│  ├─ video-feed.tsx         # Video feed placeholder
-│  ├─ side-panel.tsx         # Reusable panel for map/history
-│  ├─ floating-toolbar.tsx   # 🆕 Floating black bar with icons
-│  ├─ record-button.tsx      # (Optional standalone record logic)
-│
-├─ lib/
-│  ├─ utils.ts               # Helper functions (e.g., className merge)
-│
-├─ public/
-│  └─ logo.svg
-│
-├─ package.json
-└─ tailwind.config.js
+│  └─ floating-toolbar.tsx
+├─ docs/
+│  ├─ api-specs.md
+│  ├─ architecture.md
+│  ├─ project-planner.md
+│  ├─ setup-guide.md
+│  └─ structure.md
+├─ frontend/
+│  ├─ public/
+│  │  ├─ file.svg
+│  │  ├─ globe.svg
+│  │  ├─ logo.svg
+│  │  ├─ next.svg
+│  │  ├─ vercel.svg
+│  │  └─ window.svg
+│  ├─ src/
+│  │  ├─ app/
+│  │  │  ├─ globals.css
+│  │  │  ├─ layout.tsx
+│  │  │  └─ page.tsx
+│  │  ├─ components/
+│  │  │  ├─ ui/
+│  │  │  │  ├─ button.tsx
+│  │  │  │  └─ card.tsx
+│  │  │  ├─ floating-sidebar.tsx
+│  │  │  ├─ header.tsx
+│  │  │  ├─ history-panel.tsx
+│  │  │  ├─ map.tsx
+│  │  │  ├─ record-button.tsx
+│  │  │  ├─ side-panel.tsx
+│  │  │  └─ video-feed.tsx
+│  │  ├─ lib/
+│  │  │  ├─ theme-context.tsx
+│  │  │  └─ utils.ts
+│  │  └─ services/
+│  │     └─ api.ts
+│  ├─ components.json
+│  ├─ eslint.config.mjs
+│  ├─ next.config.ts
+│  ├─ package-lock.json
+│  ├─ package.json
+│  ├─ postcss.config.mjs
+│  ├─ tailwind.config.js
+│  └─ tsconfig.json
+├─ .gitignore
+├─ README.md
+└─ package-lock.json
