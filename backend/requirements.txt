@@ -1,7 +1,11 @@
 fastapi
 uvicorn[standard]
 python-multipart
-onnxruntime
+# Install PyTorch with CUDA support separately:
+# pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+torch>=2.0.0
+torchvision>=0.15.0
+ultralytics>=8.0.0
 numpy
 Pillow
 ultralytics
