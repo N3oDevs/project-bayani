@@ -4,11 +4,11 @@ from fastapi.websockets import WebSocketDisconnect
 from PIL import Image
 import base64
 import io
+import numpy as np
 from typing import Dict
 from collections import defaultdict
 
 from .routes.predict import router as predict_router
-from .utils.preprocess import preprocess_image
 from .models.yolo_model import YOLOModel
 from .config import MODEL_PATH
 
@@ -27,6 +27,22 @@ app.include_router(predict_router)
 # Shared model instance for realtime websocket
 _ws_model = YOLOModel(MODEL_PATH)
 
+@app.get("/")
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for deployment platforms"""
+    model_info = _ws_model.get_model_info()
+    return {
+        "status": "healthy",
+        "service": "Project Bayani Backend",
+        "model": model_info
+    }
+
+@app.get("/model/info")
+async def model_info():
+    """Get model information"""
+    return _ws_model.get_model_info()
+
 @app.websocket("/ws/predict")
 async def ws_predict(websocket: WebSocket):
     await websocket.accept()
@@ -38,11 +54,17 @@ async def ws_predict(websocket: WebSocket):
                 await websocket.send_json({"error": "missing image"})
                 continue
             try:
+                # Decode base64 image
                 payload = img_b64.split(",")[-1]
                 content = base64.b64decode(payload)
                 image = Image.open(io.BytesIO(content)).convert("RGB")
-                inp = preprocess_image(image)
-                preds = _ws_model.predict(inp, orig_size=image.size)
+                
+                # Convert PIL to numpy array for model
+                img_array = np.array(image)
+                
+                # Run prediction with new API
+                preds = _ws_model.predict(img_array, conf=0.25)
+                
                 await websocket.send_json({"predictions": preds})
             except Exception as e:
                 await websocket.send_json({"error": str(e)})

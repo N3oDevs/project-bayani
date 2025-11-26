@@ -1,0 +1,15 @@
+services:
+  # Backend API with YOLOv9
+  - type: web
+    name: bayani-backend
+    runtime: python
+    region: singapore
+    plan: free
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.11"
+      - key: PORT
+        sync: false
+    healthCheckPath: /health
