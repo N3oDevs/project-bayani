@@ -11,6 +11,7 @@ from collections import defaultdict
 from .routes.predict import router as predict_router
 from .models.yolo_model import YOLOModel
 from .config import MODEL_PATH
+from .utils.preprocess import preprocess_image
 
 app = FastAPI(title="Project Bayani Backend")
 
@@ -59,11 +60,8 @@ async def ws_predict(websocket: WebSocket):
                 content = base64.b64decode(payload)
                 image = Image.open(io.BytesIO(content)).convert("RGB")
                 
-                # Convert PIL to numpy array for model
-                img_array = np.array(image)
-                
-                # Run prediction with new API
-                preds = _ws_model.predict(img_array, conf=0.25)
+                inp = preprocess_image(image)
+                preds = _ws_model.predict(inp, orig_size=image.size, pil_image=image)
                 
                 await websocket.send_json({"predictions": preds})
             except Exception as e:
