@@ -5,17 +5,12 @@ import { X, Mic, History, Map } from 'lucide-react';
 import RecordButton from './record-button';
 import MapComponent from './map';
 import HistoryPanel from './history-panel';
-import { predictImage } from '@/services/api';
 
-type SidebarTab = 'voice' | 'history' | 'maps' | 'api';
+type SidebarTab = 'voice' | 'history' | 'maps';
 
 export default function FloatingSidebar() {
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<SidebarTab>('voice');
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isPredicting, setIsPredicting] = useState(false);
-  const [predictions, setPredictions] = useState<any>(null);
-  const [apiError, setApiError] = useState<string | null>(null);
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
@@ -25,25 +20,6 @@ export default function FloatingSidebar() {
     setActiveTab(tab);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0] ?? null;
-    setSelectedFile(f);
-  };
-
-  const handlePredict = async () => {
-    if (!selectedFile) return;
-    setIsPredicting(true);
-    setApiError(null);
-    setPredictions(null);
-    try {
-      const res = await predictImage(selectedFile);
-      setPredictions(res);
-    } catch (err: any) {
-      setApiError(err?.message ?? 'Request failed');
-    } finally {
-      setIsPredicting(false);
-    }
-  };
 
   return (
     <>
@@ -133,16 +109,6 @@ export default function FloatingSidebar() {
             <Map size={20} />
             Maps
           </button>
-          <button
-            onClick={() => handleTabClick('api')}
-            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-medium transition-colors ${
-              activeTab === 'api'
-                ? 'bg-blue-500 dark:bg-blue-600 text-white'
-                : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
-            }`}
-          >
-            API
-          </button>
         </div>
 
         {/* Tab Content */}
@@ -162,35 +128,7 @@ export default function FloatingSidebar() {
               <MapComponent />
             </div>
           )}
-          {activeTab === 'api' && (
-            <div className="flex flex-col gap-3">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="block w-full text-sm text-gray-900 dark:text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
-              />
-              <button
-                onClick={handlePredict}
-                disabled={!selectedFile || isPredicting}
-                className={`py-2 px-4 rounded-lg text-sm font-medium ${
-                  isPredicting
-                    ? 'bg-gray-400 dark:bg-gray-700 text-white'
-                    : 'bg-blue-600 dark:bg-blue-600 text-white hover:bg-blue-700 dark:hover:bg-blue-700'
-                }`}
-              >
-                {isPredicting ? 'Predicting...' : 'Send to /predict'}
-              </button>
-              {apiError && (
-                <div className="text-red-500 text-sm">{apiError}</div>
-              )}
-              {predictions && (
-                <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-lg text-xs overflow-auto max-h-64 text-gray-800 dark:text-gray-100">
-                  {JSON.stringify(predictions, null, 2)}
-                </pre>
-              )}
-            </div>
-          )}
+          
         </div>
       </div>
     </>
