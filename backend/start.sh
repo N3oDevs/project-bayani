@@ -18,8 +18,8 @@ echo "✅ Model found: $(ls -lh models/best.pt | awk '{print $9, $5}')"
 
 # Start server
 echo ""
-echo "🌐 Starting server on port 8000..."
+echo "🌐 Starting server on port 7860..."
 echo "Press Ctrl+C to stop"
 echo ""
 
-uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn app.main:app --host 0.0.0.0 --port 7860 --reload

@@ -31,7 +31,11 @@ export function useWebSocketVoiceRecorder(options: UseWebSocketRecorderOptions =
       setError(null)
       setIsConnecting(true)
 
-      const wsUrl = websocketUrl || options.wsUrl || 'ws://localhost:8000/ws/audio'
+      const wsUrl =
+        websocketUrl ||
+        options.wsUrl ||
+        process.env.NEXT_PUBLIC_AUDIO_WS_URL ||
+        'wss://c23df3c2d06a-7860.proxy.runpod.net/ws/audio'
       
       // Connect to WebSocket
       const ws = new WebSocket(wsUrl)

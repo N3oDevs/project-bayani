@@ -15,7 +15,7 @@ export default function HardwarePage() {
   const room = 'default'
 
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_SIGNAL_WS_URL || 'ws://localhost:8000/ws/signaling'
+    const url = process.env.NEXT_PUBLIC_SIGNAL_WS_URL || 'wss://c23df3c2d06a-7860.proxy.runpod.net/ws/signaling'
     const ws = new WebSocket(url)
     wsRef.current = ws
     ws.onopen = () => {
