@@ -2,7 +2,7 @@ export async function predictImage(file: File) {
   const form = new FormData()
   form.append('file', file)
 
-  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://c23df3c2d06a-7860.proxy.runpod.net'
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000'
   const res = await fetch(`${baseUrl}/predict`, {
     method: 'POST',
     body: form,

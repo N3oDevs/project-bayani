@@ -33,7 +33,7 @@ export default function VideoFeed() {
   }, [])
 
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_SIGNAL_WS_URL || 'wss://c23df3c2d06a-7860.proxy.runpod.net/ws/signaling'
+    const url = process.env.NEXT_PUBLIC_SIGNAL_WS_URL || 'ws://localhost:8000/ws/signaling'
     const ws = new WebSocket(url)
     wsRef.current = ws
     ws.onopen = () => {
@@ -65,7 +65,7 @@ export default function VideoFeed() {
   }, [])
 
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_WS_URL || 'wss://c23df3c2d06a-7860.proxy.runpod.net/ws/predict'
+    const url = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws/predict'
     try {
       const ws = new WebSocket(url)
       predictWsRef.current = ws

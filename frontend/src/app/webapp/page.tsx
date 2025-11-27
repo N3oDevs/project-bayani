@@ -15,7 +15,7 @@ export default function WebAppPage() {
   const wsRef = useRef<WebSocket | null>(null)
   const pcRef = useRef<RTCPeerConnection | null>(null)
 
-  const signalingUrl = process.env.NEXT_PUBLIC_SIGNALING_URL ?? 'ws://localhost:8080'
+  const signalingUrl = process.env.NEXT_PUBLIC_SIGNALING_URL ?? 'ws://localhost:8000/ws/signaling'
   const room = 'default'
 
   useEffect(() => {
@@ -23,7 +23,8 @@ export default function WebAppPage() {
     wsRef.current = ws
     ws.onopen = () => {
       setWsOpen(true)
-      ws.send(JSON.stringify({ type: 'register', role: 'webapp', room }))
+      ws.send(JSON.stringify({ type: 'join', role: 'webapp', room }))
+      ws.send(JSON.stringify({ type: 'ready', room, to: 'hardware' }))
     }
     ws.onmessage = (ev) => {
       let msg
@@ -35,6 +36,10 @@ export default function WebAppPage() {
       } else if (msg.type === 'ice' && msg.candidate) {
         if (pcRef.current) {
           pcRef.current.addIceCandidate(msg.candidate).catch(() => {})
+        }
+      } else if (msg.type === 'peer_joined' && msg.role === 'hardware') {
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          wsRef.current.send(JSON.stringify({ type: 'ready', room, to: 'hardware' }))
         }
       } else if (msg.type === 'peer_disconnected') {
         endCall()
@@ -107,4 +112,3 @@ export default function WebAppPage() {
     </div>
   )
 }
-

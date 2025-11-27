@@ -7,6 +7,9 @@ import io
 import numpy as np
 from typing import Dict
 from collections import defaultdict
+import asyncio
+import json
+import time
 
 from .routes.predict import router as predict_router
 from .models.yolo_model import YOLOModel
@@ -84,11 +87,13 @@ async def ws_signaling(websocket: WebSocket):
         if t != "join" or not room or role not in ("hardware", "webapp"):
             await websocket.close()
             return
+        print(f"[signaling] join role={role} room={room}")
         rooms[room][role] = websocket
         other = "webapp" if role == "hardware" else "hardware"
         peer = rooms[room].get(other)
         if peer:
             try:
+                print(f"[signaling] notify {other} of peer_joined role={role} room={room}")
                 await peer.send_json({"type": "peer_joined", "room": room, "role": role})
             except Exception:
                 pass
@@ -101,6 +106,7 @@ async def ws_signaling(websocket: WebSocket):
                     payload = dict(msg)
                     payload["from"] = role
                     try:
+                        print(f"[signaling] forward type={mtype} from={role} to={'webapp' if role=='hardware' else 'hardware'} room={room}")
                         await target.send_json(payload)
                     except Exception:
                         pass
@@ -111,6 +117,7 @@ async def ws_signaling(websocket: WebSocket):
         peer = rooms.get(room or "", {}).get(other)
         if peer:
             try:
+                print(f"[signaling] disconnect role={role} room={room}")
                 await peer.send_json({"type": "peer_disconnected", "room": room})
             except Exception:
                 pass
@@ -121,4 +128,102 @@ async def ws_signaling(websocket: WebSocket):
                     del rooms[room]
         except Exception:
             pass
+
+@app.websocket("/ws/audio")
+async def ws_audio(websocket: WebSocket):
+    await websocket.accept()
+    is_recording = False
+    is_paused = False
+    task: asyncio.Task | None = None
+    try:
+        while True:
+            try:
+                msg = await websocket.receive_text()
+                data = json.loads(msg)
+                action = data.get("action")
+            except Exception:
+                action = None
+            if action == "start_recording":
+                is_recording = True
+                is_paused = False
+                await websocket.send_json({"status": "recording_started"})
+                if task is None or task.done():
+                    task = asyncio.create_task(stream_audio_to_client(websocket, lambda: is_recording and not is_paused))
+            elif action == "pause":
+                is_paused = True
+                await websocket.send_json({"status": "paused"})
+            elif action == "resume":
+                is_paused = False
+                await websocket.send_json({"status": "resumed"})
+            elif action == "stop":
+                is_recording = False
+                await websocket.send_json({"status": "stopped"})
+                break
+            elif action == "cancel":
+                is_recording = False
+                await websocket.send_json({"status": "cancelled"})
+                break
+    except WebSocketDisconnect:
+        return
+    except Exception as e:
+        try:
+            await websocket.send_json({"error": str(e)})
+        except Exception:
+            pass
+
+async def stream_audio_to_client(websocket: WebSocket, should_continue):
+    try:
+        while should_continue():
+            await asyncio.sleep(0.1)
+            await websocket.send_bytes(b"\x00" * 1024)
+    except Exception:
+        pass
+
+@app.websocket("/ws/gps")
+async def ws_gps(websocket: WebSocket):
+    await websocket.accept()
+    is_tracking = False
+    task: asyncio.Task | None = None
+    try:
+        while True:
+            try:
+                message = await asyncio.wait_for(websocket.receive_text(), timeout=0.1)
+                data = json.loads(message)
+                action = data.get("action")
+            except asyncio.TimeoutError:
+                action = None
+            except Exception:
+                action = None
+            if action == "start_tracking":
+                is_tracking = True
+                await websocket.send_json({"status": "tracking_started"})
+                if task is None or task.done():
+                    task = asyncio.create_task(stream_gps_location(websocket, lambda: is_tracking))
+            elif action == "stop_tracking":
+                is_tracking = False
+                await websocket.send_json({"status": "tracking_stopped"})
+    except WebSocketDisconnect:
+        return
+    except Exception as e:
+        try:
+            await websocket.send_json({"error": str(e)})
+        except Exception:
+            pass
+
+async def stream_gps_location(websocket: WebSocket, should_continue):
+    try:
+        while should_continue():
+            gps_data = {
+                "latitude": 14.5995,
+                "longitude": 120.9842,
+                "accuracy": 10.5,
+                "altitude": 15.0,
+                "speed": 0.0,
+                "heading": None,
+                "timestamp": int(time.time() * 1000),
+            }
+            await websocket.send_json(gps_data)
+            await asyncio.sleep(2)
+    except Exception:
+        pass
 

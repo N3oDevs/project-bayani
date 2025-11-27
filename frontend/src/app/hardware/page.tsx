@@ -15,7 +15,7 @@ export default function HardwarePage() {
   const room = 'default'
 
   useEffect(() => {
-    const url = process.env.NEXT_PUBLIC_SIGNAL_WS_URL || 'wss://c23df3c2d06a-7860.proxy.runpod.net/ws/signaling'
+    const url = process.env.NEXT_PUBLIC_SIGNAL_WS_URL || 'ws://localhost:8000/ws/signaling'
     const ws = new WebSocket(url)
     wsRef.current = ws
     ws.onopen = () => {
@@ -24,7 +24,11 @@ export default function HardwarePage() {
     ws.onmessage = async (ev) => {
       try {
         const msg = JSON.parse(ev.data)
-        if (msg?.type === 'ready' && calling) {
+        if (msg?.type === 'ready') {
+          if (!calling) {
+            startCall()
+            return
+          }
           const sdp = pcRef.current?.localDescription ? { type: pcRef.current.localDescription.type, sdp: pcRef.current.localDescription.sdp } : null
           if (sdp) wsRef.current?.send(JSON.stringify({ type: 'offer', sdp, room, to: 'webapp' }))
           return
